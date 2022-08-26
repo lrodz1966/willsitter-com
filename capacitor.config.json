@@ -1,0 +1,6 @@
+{
+	"appId": "io.ionic.starter",
+	"appName": "WillSitter.com",
+	"webDir": "www",
+	"bundledWebRuntime": false
+}

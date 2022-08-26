@@ -1,0 +1,8 @@
+{
+  "name": "WillSitter.com",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular",
+  "id": "0c6f4e5c"
+}
