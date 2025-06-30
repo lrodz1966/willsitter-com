@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>QR Scanner</title>
+  <style>
+    body, html { margin: 0; padding: 0; background: black; }
+    video, canvas { display: block; width: 100vw; height: auto; }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay></video>
+  <canvas id="canvas" hidden></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+
+    function sendResult(data) {
+      window.parent.postMessage({ type: 'qrScanned', payload: data }, '*');
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        requestAnimationFrame(scan);
+      })
+      .catch(err => {
+        console.error("Camera error:", err);
+      });
+    
+    // Inside qr-jsqr.html, before the scanning code
+    setTimeout(() => {
+      window.parent.postMessage({ type: "test", payload: "hello world" }, "*");
+    }, 2000);
+
+    function scan() {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+        if (code) {
+          sendResult(code.data);
+          return;
+        }
+      }
+      requestAnimationFrame(scan);
+    }
+  </script>
+</body>
+</html>
