@@ -30,6 +30,11 @@
       .catch(err => {
         console.error("Camera error:", err);
       });
+    
+    // Inside qr-jsqr.html, before the scanning code
+    setTimeout(() => {
+      window.parent.postMessage({ type: "test", payload: "hello world" }, "*");
+    }, 2000);
 
     function scan() {
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
