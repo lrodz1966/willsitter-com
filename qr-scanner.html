@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+  </head>
+  <body>
+    <div id="reader" style="width: 300px;"></div>
+    <script>
+      let html5QrCode;
+
+      window.addEventListener("message", function(event) {
+        if (event.data && event.data.action === "startScan") {
+          console.log("✅ Received postMessage from Wix to start scanning.");
+          startQRScanner();
+        }
+      });
+
+      function startQRScanner() {
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("reader");
+        }
+
+        Html5Qrcode.getCameras().then(devices => {
+          if (devices && devices.length > 0) {
+            const cameraId = devices[0].id;
+console.log("📸 Starting QR code scan with cameraId:", cameraId);
+
+            html5QrCode.start(
+              cameraId,
+              {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+              },
+              (decodedText) => {
+                console.log("✅ QR Code scanned:", decodedText);
+                parent.postMessage({ qrCode: decodedText }, "*");
+                html5QrCode.stop(); // Optional: stop scanning after first successful scan
+              },
+              (errorMessage) => {
+                // Can log if needed
+              }
+            ).catch(err => console.error("❌ QR start error:", err));
+          }
+        }).catch(err => console.error("❌ Camera error:", err));
+      }
+    </script>
+  </body>
+</html>
