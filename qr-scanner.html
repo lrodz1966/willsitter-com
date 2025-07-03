@@ -1,48 +1,86 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-  </head>
-  <body>
-    <div id="reader" style="width: 300px;"></div>
-    <script>
-      let html5QrCode;
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>QR Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 30px;
+    }
+    #reader {
+      width: 300px;
+      height: 300px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h2>QR Scanner</h2>
+  <div id="reader"></div>
 
-      window.addEventListener("message", function(event) {
-        if (event.data && event.data.action === "startScan") {
-          console.log("✅ Received postMessage from Wix to start scanning.");
-          startQRScanner();
-        }
-      });
+  <script>
+    console.log("🚀 QR Scanner page loaded");
 
-      function startQRScanner() {
-        if (!html5QrCode) {
-          html5QrCode = new Html5Qrcode("reader");
-        }
-
-        Html5Qrcode.getCameras().then(devices => {
-          if (devices && devices.length > 0) {
-            const cameraId = devices[0].id;
-console.log("📸 Starting QR code scan with cameraId:", cameraId);
-
-            html5QrCode.start(
-              cameraId,
-              {
-                fps: 10,
-                qrbox: { width: 250, height: 250 }
-              },
-              (decodedText) => {
-                console.log("✅ QR Code scanned:", decodedText);
-                parent.postMessage({ qrCode: decodedText }, "*");
-                html5QrCode.stop(); // Optional: stop scanning after first successful scan
-              },
-              (errorMessage) => {
-                // Can log if needed
-              }
-            ).catch(err => console.error("❌ QR start error:", err));
-          }
-        }).catch(err => console.error("❌ Camera error:", err));
+    // Wait for Wix to send a message to start scanning (if embedded)
+    window.addEventListener("message", function(event) {
+      if (event.data && event.data.action === "startScan") {
+        console.log("✅ Received postMessage from Wix to start scanning.");
+        startScanner();
       }
-    </script>
-  </body>
+    });
+
+    // Allow manual start if page is standalone
+    document.addEventListener("DOMContentLoaded", () => {
+      // If not in an iframe (i.e., standalone test), auto-start
+      if (window.self === window.top) {
+        console.log("🧪 Running in standalone mode. Attempting to start scanner...");
+        startScanner();
+      }
+    });
+
+    function startScanner() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          console.log("✅ Camera permission granted");
+          // Stop preview stream — Html5Qrcode will re-request it
+          stream.getTracks().forEach(t => t.stop());
+
+          const html5QrCode = new Html5Qrcode("reader");
+
+          Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length > 0) {
+              const cameraId = devices[0].id;
+              html5QrCode.start(
+                cameraId,
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText, decodedResult) => {
+                  console.log("📦 QR Code detected:", decodedText);
+                  // Send result back to parent if embedded
+                  window.parent.postMessage({ qrCode: decodedText }, "*");
+                },
+                errorMessage => {
+                  // console.log("Scan error:", errorMessage); // optional
+                }
+              ).catch(err => {
+                console.error("❌ html5QrCode.start() failed:", err);
+              });
+            } else {
+              console.warn("⚠️ No cameras found.");
+            }
+          }).catch(err => {
+            console.error("❌ Html5Qrcode.getCameras failed:", err);
+          });
+        })
+        .catch(err => {
+          console.error("❌ Camera permission denied or unavailable:", err);
+        });
+    }
+  </script>
+</body>
 </html>
+
