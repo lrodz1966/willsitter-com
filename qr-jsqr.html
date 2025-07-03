@@ -1,55 +1,48 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8" />
-  <title>QR Scanner</title>
-  <style>
-    body, html { margin: 0; padding: 0; background: black; }
-    video, canvas { display: block; width: 100vw; height: auto; }
-  </style>
-</head>
-<body>
-  <video id="video" autoplay></video>
-  <canvas id="canvas" hidden></canvas>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-  <script>
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const context = canvas.getContext('2d');
+  <head>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+  </head>
+  <body>
+    <div id="reader" style="width: 300px;"></div>
+    <script>
+      let html5QrCode;
 
-    function sendResult(data) {
-      window.parent.postMessage({ type: 'qrScanned', payload: data }, '*');
-    }
-
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(stream => {
-        video.srcObject = stream;
-        video.setAttribute("playsinline", true);
-        requestAnimationFrame(scan);
-      })
-      .catch(err => {
-        console.error("Camera error:", err);
-      });
-    
-    // Inside qr-jsqr.html, before the scanning code
-    setTimeout(() => {
-      window.parent.postMessage({ type: "test", payload: "hello world" }, "*");
-    }, 2000);
-
-    function scan() {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, canvas.width, canvas.height);
-        if (code) {
-          sendResult(code.data);
-          return;
+      window.addEventListener("message", function(event) {
+        if (event.data && event.data.action === "startScan") {
+          console.log("✅ Received postMessage from Wix to start scanning.");
+          startQRScanner();
         }
+      });
+
+      function startQRScanner() {
+        if (!html5QrCode) {
+          html5QrCode = new Html5Qrcode("reader");
+        }
+
+        Html5Qrcode.getCameras().then(devices => {
+          if (devices && devices.length > 0) {
+            const cameraId = devices[0].id;
+console.log("📸 Starting QR code scan with cameraId:", cameraId);
+
+            html5QrCode.start(
+              cameraId,
+              {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+              },
+              (decodedText) => {
+                console.log("✅ QR Code scanned:", decodedText);
+                parent.postMessage({ qrCode: decodedText }, "*");
+                html5QrCode.stop(); // Optional: stop scanning after first successful scan
+              },
+              (errorMessage) => {
+                // Can log if needed
+              }
+            ).catch(err => console.error("❌ QR start error:", err));
+          }
+        }).catch(err => console.error("❌ Camera error:", err));
       }
-      requestAnimationFrame(scan);
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>
