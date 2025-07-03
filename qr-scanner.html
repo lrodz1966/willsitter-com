@@ -1,59 +1,47 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>QR Scanner</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-      body { margin: 0; font-family: sans-serif; }
-      #reader { width: 100%; max-width: 320px; margin: 20px auto; }
-    </style>
-  </head>
-  <body>
-    <div id="reader"></div>
+<head>
+  <meta charset="UTF-8" />
+  <title>QR Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    #reader { width: 100%; max-width: 320px; margin: 20px auto; }
+  </style>
+</head>
+<body>
+  <div id="reader"></div>
 
-    <script>
-      let html5QrCode;
+  <script>
+    let html5QrCode;
 
-      // Listen for messages from the parent (Wix page)
-      window.addEventListener("message", (event) => {
-        if (event.data.action === "startScan") {
-          console.log("✅ Received postMessage from Wix to start scanning.");
-          startQRScanner();
-        }
-      });
-
-      function startQRScanner() {
-        if (!Html5Qrcode.getCameras || !Html5QrcodeScanner) return;
-
-        Html5Qrcode.getCameras().then(devices => {
-          if (devices && devices.length > 0) {
-            const cameraId = devices[0].id;
-            html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(
-              cameraId,
-              {
-                fps: 10,
-                qrbox: { width: 250, height: 250 }
-              },
-              (decodedText, decodedResult) => {
-                console.log("📦 Decoded QR:", decodedText);
-                // Send result back to Wix via postMessage
-                window.parent.postMessage({ qrCode: decodedText }, "*");
-              },
-              (errorMessage) => {
-                // Ignore scan errors
-              }
-            ).catch(err => {
-              console.error("❌ QR start error:", err);
-            });
-          }
-        }).catch(err => {
-          console.error("❌ Camera error:", err);
-        });
+    // ✅ Allow camera after interaction only
+    window.addEventListener("message", (event) => {
+      if (event.data && event.data.action === "startScan") {
+        console.log("✅ Received postMessage from Wix to start scanning");
+        startQRScanner();
       }
-    </script>
-  </body>
+    });
+
+    function startQRScanner() {
+      Html5Qrcode.getCameras().then(devices => {
+        if (devices && devices.length > 0) {
+          const cameraId = devices[0].id;
+          html5QrCode = new Html5Qrcode("reader");
+          html5QrCode.start(
+            cameraId,
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+              console.log("📦 QR code decoded:", decodedText);
+              window.parent.postMessage({ qrCode: decodedText }, "*");
+            },
+            (errorMessage) => {
+              // ignore scan errors
+            }
+          ).catch(err => console.error("❌ Start error:", err));
+        }
+      }).catch(err => console.error("❌ Camera error:", err));
+    }
+  </script>
+</body>
 </html>
-
-
