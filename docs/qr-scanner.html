@@ -24,17 +24,19 @@
       Html5Qrcode.getCameras().then(devices => {
         if (devices && devices.length > 0) {
           const cameraId = devices[0].id;
-          html5QrCode.start(
-            cameraId,
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            decodedText => {
-              output.textContent = "📦 QR Code: " + decodedText;
-              html5QrCode.stop(); // stop scanning after success
-            },
-            error => {
-              // scan errors can be ignored or logged
-            }
-          ).catch(err => {
+         html5QrCode.start(
+          cameraId,
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText) => {
+            console.log("📦 QR code decoded:", decodedText);
+            // 👇 This sends the scanned result back to the HTML component in Wix
+            window.parent.postMessage({ qrCode: decodedText }, "*");
+          },
+          (errorMessage) => {
+            // ignore errors
+          }
+        )
+        .catch(err => {
             output.textContent = "❌ Error starting scanner: " + err;
           });
         } else {
