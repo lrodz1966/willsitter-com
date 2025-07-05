@@ -38,7 +38,8 @@
             status.textContent = "✅ Scanned! Returning to site...";
 
             // Redirect back to Wix site with scanned data
-            const returnUrl = `https://www.willsitter.com/client-profile/${clientId}?qrcode=${encodeURIComponent(decodedText)}`;
+            
+            const returnUrl = `https://www.willsitter.com/clientprofile/${clientId}?qrcode=${encodeURIComponent(decodedText)}`;
             setTimeout(() => window.location.href = returnUrl, 1000);
           },
           (error) => {
